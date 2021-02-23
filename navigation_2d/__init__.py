@@ -1,4 +1,4 @@
-from .navigation_env import NavigationEnvDefault, NavigationEnvAcc, NavigationEnvAccLidarObs
+from .navigation_env import NavigationEnvDefault, NavigationEnvAcc, NavigationEnvAccLidarObs, NonStationaryNavigation
 #
 from gym.envs import register
 from .config import *
@@ -8,15 +8,20 @@ for idx, obs_conf in enumerate(config_set):
     custom_envs['Navi-Vel-Full-Obs-Task{}-v0'.format(idx)] = dict(
                  path='navigation_2d:NavigationEnvDefault',
                  max_episode_steps=1000,
-                 kwargs=dict(obstacles_args=obs_conf))
+                 kwargs=dict(task_args=obs_conf))
     custom_envs['Navi-Acc-Full-Obs-Task{}-v0'.format(idx)] = dict(
                  path='navigation_2d:NavigationEnvAcc',
                  max_episode_steps=1000,
-                 kwargs=dict(obstacles_args=obs_conf))
+                 kwargs=dict(task_args=obs_conf))
     custom_envs['Navi-Acc-Lidar-Obs-Task{}-v0'.format(idx)] = dict(
                  path='navigation_2d:NavigationEnvAccLidarObs',
                  max_episode_steps=1000,
-                 kwargs=dict(obstacles_args=obs_conf))
+                 kwargs=dict(task_args=obs_conf))
+
+custom_envs['Non-Stationary-Navigation-v0'] = dict(
+             path='navigation_2d:NonStationaryNavigation',
+             max_episode_steps=1000,
+             kwargs=dict(task_args=config_set[0]))
 
 # register each env into
 def register_custom_envs():

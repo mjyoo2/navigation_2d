@@ -69,7 +69,7 @@ goal_set = [denormalize_position([0.2, 0.2], W, H),
             denormalize_position([0.8, 0.8], W, H),
             denormalize_position([0.8, 0.2], W, H),
             denormalize_position([0.0756, 0.5], W, H),
-            denormalize_position([0.5, 0.5], W, H),
+            denormalize_position([0.5, 0.0756], W, H),
             denormalize_position([0.924, 0.5], W, H),
             denormalize_position([0.5, 0.924], W, H)]
 

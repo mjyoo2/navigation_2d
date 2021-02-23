@@ -225,7 +225,7 @@ class NavigationEnvDefault(gym.Env, EzPickle):
 
     def _build_goal(self):
         goal_pos = self.task_args['Goal']
-        self.goal = self.world.CreateStaticBody(position=goal_pos, angle=0.0,
+        self.goal = self.world.CreateDynamicBody(position=goal_pos, angle=0.0,
                                                 fixtures=fixtureDef(shape=polygonShape(vertices=[(x / SCALE, y / SCALE) for x, y in DRONE_POLY]),
                                                                     density=5.0, friction=0.1, categoryBits=0x002,
                                                                     maskBits=0x0010, restitution=0.0))
@@ -298,6 +298,18 @@ class NavigationEnvDefault(gym.Env, EzPickle):
         self._observe_lidar(drone_pos)
         self.world.Step(1.0 / FPS, 6 * 30, 2 * 30)
         return np.copy(self.array_observation())
+
+    def randomize_goal(self):
+        goal = np.random.random() * 2 * np.pi
+        goal = denormalize_position(np.array([np.cos(goal), np.sin(goal)]) * 0.424 + np.array([0.5, 0.5]), W, H)
+        self.task_args['Goal'] = goal
+        return
+
+    def randomize_obstacles(self):
+        a = np.random.choice(4)
+        self.task_args['OBSTACLE_POSITIONS'] = obs_set[a]
+        self.obstacles.speed_table = np.zeros(len(self.task_args['OBSTACLE_POSITIONS']))
+        return
 
     def step(self, action: np.iterable):
         action = np.asarray(action, dtype=np.float64)
@@ -409,8 +421,8 @@ class NavigationEnvAcc(NavigationEnvDefault):
 
 
 class NavigationEnvAccLidarObs(NavigationEnvAcc):
-    def __init__(self, obstacles_args, max_obs_range=3,  max_speed=5, initial_speed=2, **kwargs):
-        super().__init__(obstacles_args, max_obs_range, max_speed, initial_speed, )
+    def __init__(self, task_args, max_obs_range=3,  max_speed=5, initial_speed=2, **kwargs):
+        super().__init__(task_args, max_obs_range, max_speed, initial_speed, **kwargs)
         self.observation_meta_data = {
             'position': gym.spaces.Box(np.array([0, 0]), np.array([W, H]), dtype=np.float32),
             'distance': gym.spaces.Box(np.array([0]), np.array([np.sqrt(W ** 2 + H ** 2)]), dtype=np.float32),
@@ -433,3 +445,21 @@ class NavigationEnvAccLidarObs(NavigationEnvAcc):
             'velocity': velocity
         }
         return dict_obs
+
+
+class NonStationaryNavigation(NavigationEnvAccLidarObs):
+    def __init__(self, task_args, max_obs_range=3,  max_speed=5, initial_speed=2, **kwargs):
+        super().__init__(task_args, max_obs_range, max_speed, initial_speed, **kwargs)
+        self.theta = 0
+
+    def step(self, action):
+        state, reward, done, info = super().step(action)
+        self.moving_goal()
+        return state, reward, done, info
+
+    def moving_goal(self):
+        self.theta += np.pi / 1800
+        goal = denormalize_position(np.array([np.cos(self.theta), np.sin(self.theta)]) * 0.424 + np.array([0.5, 0.5]), W, H)
+        self.task_args['Goal'] = goal
+        self.goal.position.Set(goal[0], goal[1])
+        return
